@@ -151,30 +151,15 @@ export class UsersService {
       },
     });
 
-    const salesStats = await Promise.all(
-      sellers.map(async (seller) => {
-        const orderItems = await this.prisma.orderItem.findMany({
-          where: {
-            product: { sellerId: seller.id },
-            order: { status: 'PAID' },
-          },
-          include: { order: true },
-        });
-
-        const totalSales = orderItems.reduce(
-          (sum, item) => sum + item.price * item.quantity,
-          0,
-        );
-
-        return {
-          vendorId: seller.id,
-          name: seller.name,
-          email: seller.email,
-          totalSales,
-          itemsSold: orderItems.length,
-        };
-      }),
-    );
+    const salesStats = sellers.map((seller) => {
+      return {
+        vendorId: seller.id,
+        name: seller.name,
+        email: seller.email,
+        totalSales: 0,
+        itemsSold: 0,
+      };
+    });
 
     return salesStats;
   }
