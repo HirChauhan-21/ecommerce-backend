@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
-import * as crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -37,7 +37,7 @@ export class AuthService {
       throw new ConflictException('Email already exists');
     }
 
-    const hashedPassword = crypto.createHash('sha256').update(registerDto.password).digest('hex');
+    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
     const user = await this.prisma.user.create({
       data: {
@@ -70,11 +70,18 @@ export class AuthService {
     }
 
     let isPasswordValid = false;
-    if (user.password.startsWith('$2b$')) {
-      const bcrypt = require('bcrypt');
+
+    if (user.password.startsWith('$2')) {
       isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+    } else if (/^[a-f0-9]{64}$/.test(user.password)) {
+      const crypto = await import('crypto');
+      const hashedPassword = crypto
+        .createHash('sha256')
+        .update(loginDto.password)
+        .digest('hex');
+      isPasswordValid = hashedPassword === user.password;
     } else {
-      isPasswordValid = crypto.createHash('sha256').update(loginDto.password).digest('hex') === user.password;
+      isPasswordValid = loginDto.password === user.password;
     }
 
     if (!isPasswordValid) {
@@ -83,7 +90,9 @@ export class AuthService {
 
     // Authorization checks
     if (user.status === 'BLOCKED') {
-      throw new ForbiddenException('Your account has been blocked by the admin.');
+      throw new ForbiddenException(
+        'Your account has been blocked by the admin.',
+      );
     }
 
     const payload = {
@@ -116,7 +125,8 @@ export class AuthService {
     }
 
     return {
-      message: 'OTP sent successfully. Use static OTP 123456 to reset password.',
+      message:
+        'OTP sent successfully. Use static OTP 123456 to reset password.',
     };
   }
 
@@ -140,7 +150,7 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired OTP');
     }
 
-    const hashedPassword = crypto.createHash('sha256').update(resetPasswordDto.newPassword).digest('hex');
+    const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, 10);
 
     await this.prisma.user.update({
       where: { email: resetPasswordDto.email },

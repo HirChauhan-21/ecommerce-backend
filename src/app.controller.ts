@@ -7,4 +7,20 @@ import { PrismaService } from './prisma/prisma.service';
 export class AppController {
   constructor(private readonly prisma: PrismaService) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('profile')
+  async profile(@Req() req: any) {
+    return this.prisma.user.findUnique({
+      where: { id: req.user.sub },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        isApprovedVendor: true,
+        createdAt: true,
+      },
+    });
+  }
 }
