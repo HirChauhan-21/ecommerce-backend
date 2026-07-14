@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  SELLER
+  ADMIN
+}
+
+
+model User {
+  id               String   @id @default(uuid())
+  name             String
+  email            String   @unique
+  password         String
+  role             Role     @default(USER)
+  status           String   @default("ACTIVE")       // ACTIVE, BLOCKED
+  isApprovedVendor Boolean  @default(false)          // For SELLER role vendor registrations
+  products         Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  products    Product[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Product {
+  id            String   @id @default(uuid())
+  title         String
+  description   String
+  price         Float
+  discountPrice Float?
+  image         String
+  rating        Float    @default(0.0)
+  isApproved    Boolean  @default(true)          // Approval flag for product management
+  stock         Int      @default(10)            // Product stock inventory count
+
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  sellerId      String
+  seller        User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
