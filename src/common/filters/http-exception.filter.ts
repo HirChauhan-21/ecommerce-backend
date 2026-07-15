@@ -41,7 +41,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       success: false,
       statusCode: status,
       message: message,
-      error: errorDetail,
+      // error: errorDetail,
       data: null,
     });
   }

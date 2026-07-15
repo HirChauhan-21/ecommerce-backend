@@ -47,6 +47,11 @@ export class UsersController {
     );
   }
 
+  @Patch('profile')
+  updateProfile(@Req() req: any, @Body() data: any) {
+    return this.usersService.update(req.user.sub, data);
+  }
+
   @Roles('ADMIN')
   @Patch(':id')
   update(@Param('id') id: string, @Body() data: any) {
@@ -59,9 +64,6 @@ export class UsersController {
     return this.usersService.remove(id);
   }
 
-
-
-  // --- VENDOR MANAGEMENT (Admin Only) ---
 
   @Roles('ADMIN')
   @Get('vendors/list')
